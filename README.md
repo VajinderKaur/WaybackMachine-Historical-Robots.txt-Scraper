@@ -29,7 +29,7 @@ https://www.blavity.com/robots.txt
 https://www.prisa.com/robots.txt    
 https://www.rtl.de/robots.txt    
 
-## Group 
+## Group B
 
 https://www.nytimes.com/robots.txt    
 https://www.wsj.com/robots.txt   
