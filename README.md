@@ -6,12 +6,12 @@ This research project analyzes how online publishers have modified their `robots
 `robots.txt` is simply a text file which contains information or rather rules about which part of the website are web crawlers and search engines allowed to access. It is like a written format about the structure of the website and which nodes are accessible by which engines and bots.
 `*` means all the web crawlers or search engines are either allowed or disallowed based on `Allow` or `Disallow` option for the node.
 ### For example:
-User-agent: * --- All the bots are not allowed to /private/ and /admin/
-Disallow: /private/
-Disallow: /admin/
+`User-agent: *` --- All the bots are not allowed to /private/ and /admin/    
+`Disallow: /private/`   
+`Disallow: /admin/`    
 
-User-agent: Google-Extended --- Google-Extended is allowed to /public/
-Allow: /public/
+`User-agent: Google-Extended` --- Google-Extended is allowed to /public/    
+`Allow: /public/`   
 
 ## Time Frame 
 June 2023 to March 2025
