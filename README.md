@@ -18,29 +18,29 @@ June 2023 to March 2025
 
 ## Group A 
 
-https://time.com/robots.txt
-https://www.spiegel.de/robots.txt
-https://fortune.com/robots.txt
-https://www.entrepreneur.com/robots.txt
-https://www.latimes.com/robots.txt
-https://www.independent.co.uk/robots.txt
-https://www.adweek.com/robots.txt
-https://www.blavity.com/robots.txt
-https://www.prisa.com/robots.txt
-https://www.rtl.de/robots.txt
+https://time.com/robots.txt   
+https://www.spiegel.de/robots.txt    
+https://fortune.com/robots.txt    
+https://www.entrepreneur.com/robots.txt    
+https://www.latimes.com/robots.txt    
+https://www.independent.co.uk/robots.txt   
+https://www.adweek.com/robots.txt    
+https://www.blavity.com/robots.txt    
+https://www.prisa.com/robots.txt    
+https://www.rtl.de/robots.txt    
 
 ## Group 
 
-https://www.nytimes.com/robots.txt
-https://www.wsj.com/robots.txt
-https://www.washingtonpost.com/robots.txt
-https://www.bbc.com/robots.txt
-https://www.theguardian.com/robots.txt
-https://www.bloomberg.com/robots.txt
-https://www.businessinsider.com/robots.txt
-https://www.vox.com/robots.txt
-https://www.wired.com/robots.txt
-https://www.forbes.com/robots.txt
+https://www.nytimes.com/robots.txt    
+https://www.wsj.com/robots.txt   
+https://www.washingtonpost.com/robots.txt    
+https://www.bbc.com/robots.txt    
+https://www.theguardian.com/robots.txt     
+https://www.bloomberg.com/robots.txt    
+https://www.businessinsider.com/robots.txt    
+https://www.vox.com/robots.txt    
+https://www.wired.com/robots.txt    
+https://www.forbes.com/robots.txt    
 
 ## Description of the Files
 
