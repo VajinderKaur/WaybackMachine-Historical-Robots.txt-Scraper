@@ -1,0 +1,283 @@
+---
+title: "RA"
+author: "Vajinder"
+date: "2025-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r}
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(purrr)
+```
+
+
+
+```{r}
+
+# Optimized function to scrape historical robots.txt
+scrape_historical_robots_r <- function(domains, output_file, start_month, start_year, end_month, end_year, sleep_interval = 0.05) {
+  
+  # Convert date range to timestamps
+  start_date <- ymd(paste(start_year, start_month, "01"))
+  end_date <- ymd(paste(end_year, end_month, "01")) %m+% months(1) - days(1)
+  
+  start_timestamp <- format(start_date, "%Y%m%d%H%M%S")
+  end_timestamp <- format(end_date, "%Y%m%d%H%M%S")
+  
+  # Initialize result list
+  robots_data <- list()
+
+  # Iterate over each domain
+  for (domain in domains) {
+    message(paste("Scraping:", domain))
+    
+    # Fetch Wayback Machine timestamps
+    cdx_url <- paste0(
+      "http://web.archive.org/cdx/search/cdx?url=", domain, "/robots.txt",
+      "&output=json&filter=statuscode:200&collapse=digest&fl=timestamp"
+    )
+    
+    res <- GET(cdx_url)
+    
+    if (status_code(res) != 200) {
+      message("Failed to retrieve CDX records for ", domain)
+      next
+    }
+    
+    content_text <- content(res, "text", encoding = "UTF-8")
+    timestamps <- fromJSON(content_text)
+    
+    if (length(timestamps) <= 1) {
+      message("No historical robots.txt records found for ", domain)
+      next
+    }
+    
+    timestamps <- as.data.frame(timestamps[-1, , drop = FALSE])
+    colnames(timestamps) <- "timestamp"
+    
+    # Filter timestamps within date range
+    timestamps <- timestamps %>%
+      filter(timestamp >= start_timestamp & timestamp <= end_timestamp) %>%
+      mutate(Timestamp = ymd_hms(timestamp, tz = "UTC"))
+    
+    if (nrow(timestamps) == 0) {
+      message("No robots.txt records found for ", domain, " in the specified date range.")
+      next
+    }
+    
+    # Fetch robots.txt content for each timestamp
+    robot_records <- map_df(timestamps$timestamp, function(ts) {
+      
+      request_url <- paste0("https://web.archive.org/web/", ts, "id_/", domain, "/robots.txt")
+      message("Fetching:", request_url)
+      
+      robot_res <- tryCatch(GET(request_url), error = function(e) NULL)
+      
+      if (is.null(robot_res) || status_code(robot_res) != 200) return(NULL)
+      
+      content_txt <- content(robot_res, "text", encoding = "UTF-8")
+      full_content <- content_txt
+      lines <- str_split(content_txt, "\n")[[1]]
+      
+      if (length(lines) == 0) return(NULL)
+      
+      # Extract rules efficiently
+      user_agent <- NA
+      rules <- list()
+
+      for (line in lines) {
+        line <- str_trim(line)
+        
+        if (str_starts(line, "User-agent:")) {
+          user_agent <- str_extract(line, "(?<=User-agent: ).+")
+        } else if (str_detect(line, "(Disallow|Allow):")) {
+          rule_type <- ifelse(str_detect(line, "Disallow:"), "Disallow", "Allow")
+          path <- str_extract(line, "(?<=: ).+")
+          
+          rules <- append(rules, list(data.frame(
+            Domain = domain,
+            Timestamp = ymd_hms(ts, tz = "UTC"),
+            Content = full_content,
+            UserAgent = user_agent,
+            Path = path,
+            Rule = rule_type,
+            stringsAsFactors = FALSE
+          )))
+        }
+      }
+      
+      if (length(rules) > 0) {
+        bind_rows(rules)
+      } else {
+        NULL
+      }
+    })
+    
+    if (!is.null(robot_records)) {
+      robots_data <- append(robots_data, list(robot_records))
+    }
+    
+    Sys.sleep(sleep_interval)
+  }
+  
+  # Combine all data and write to CSV
+  if (length(robots_data) > 0) {
+    final_df <- bind_rows(robots_data)
+    write.csv(final_df, output_file, row.names = FALSE)
+    message("Data saved to ", output_file)
+  } else {
+    message("No data scraped.")
+  }
+}
+
+```
+
+
+
+```{r}
+domains <- c("time.com", "bbc.com")
+scrape_historical_robots_r(domains, "historical_robots_data1.csv", 1, 2020, 2, 2020)
+
+
+```
+```{r}
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(lubridate)
+library(stringr)
+library(furrr) # For parallel processing
+
+scrape_historical_robots_r <- function(domains, output_file, start_month, start_year, end_month, end_year, sleep_interval = 0.05, cores = 4) {
+  # Convert date range to timestamps
+  start_date <- ymd(paste(start_year, start_month, "01"))
+  end_date <- ymd(paste(end_year, end_month, "01")) %m+% months(1) - days(1)
+
+  start_timestamp <- format(start_date, "%Y%m%d%H%M%S")
+  end_timestamp <- format(end_date, "%Y%m%d%H%M%S")
+  
+  # Initialize result list
+  robots_data <- list()
+
+  # Set up parallel processing plan
+  plan(multisession, workers = cores)
+
+  # Function to scrape data for a single domain
+  scrape_domain <- function(domain) {
+    message(paste("Scraping:", domain))
+
+    # Fetch Wayback Machine timestamps
+    cdx_url <- paste0(
+      "http://web.archive.org/cdx/search/cdx?url=", domain, "/robots.txt",
+      "&output=json&filter=statuscode:200&collapse=digest&fl=timestamp"
+    )
+    
+    res <- GET(cdx_url)
+    if (status_code(res) != 200) {
+      message("Failed to retrieve CDX records for ", domain)
+      return(NULL)
+    }
+    
+    content_text <- content(res, "text", encoding = "UTF-8")
+    timestamps <- fromJSON(content_text)
+    
+    if (length(timestamps) <= 1) {
+      message("No historical robots.txt records found for ", domain)
+      return(NULL)
+    }
+
+    timestamps <- as.data.frame(timestamps[-1, , drop = FALSE])
+    colnames(timestamps) <- "timestamp"
+
+    # Filter timestamps within date range
+    timestamps <- timestamps %>%
+      filter(timestamp >= start_timestamp & timestamp <= end_timestamp) %>%
+      mutate(Timestamp = ymd_hms(timestamp, tz = "UTC"))
+    
+    if (nrow(timestamps) == 0) {
+      message("No robots.txt records found for ", domain, " in the specified date range.")
+      return(NULL)
+    }
+    
+    # Fetch robots.txt content for each timestamp
+    robot_records <- map_df(timestamps$timestamp, function(ts) {
+      request_url <- paste0("https://web.archive.org/web/", ts, "id_/", domain, "/robots.txt")
+      message("Fetching:", request_url)
+
+      robot_res <- tryCatch(GET(request_url), error = function(e) NULL)
+      if (is.null(robot_res) || status_code(robot_res) != 200) return(NULL)
+
+      content_txt <- content(robot_res, "text", encoding = "UTF-8")
+      lines <- str_split(content_txt, "\n")[[1]]
+
+      if (length(lines) == 0) return(NULL)
+
+      # Extract rules efficiently
+      user_agent <- NA
+      rules <- list()
+
+      for (line in lines) {
+        line <- str_trim(line)
+        
+        if (str_starts(line, "User-agent:")) {
+          user_agent <- str_extract(line, "(?<=User-agent: ).+")
+        } else if (str_detect(line, "(Disallow|Allow):")) {
+          rule_type <- ifelse(str_detect(line, "Disallow:"), "Disallow", "Allow")
+          path <- str_extract(line, "(?<=: ).+")
+          
+          rules <- append(rules, list(data.frame(
+            Domain = domain,
+            Timestamp = ymd_hms(ts, tz = "UTC"),
+            Content = content_txt,
+            UserAgent = user_agent,
+            Path = path,
+            Rule = rule_type,
+            stringsAsFactors = FALSE
+          )))
+        }
+      }
+
+      if (length(rules) > 0) {
+        bind_rows(rules)
+      } else {
+        NULL
+      }
+    })
+
+    return(robot_records)
+  }
+
+  # Use parallel processing to scrape all domains
+  robots_data <- future_map(domains, scrape_domain)
+
+  # Filter out NULL results
+  robots_data <- robots_data[!sapply(robots_data, is.null)]
+
+  # Combine all data and write to CSV
+  if (length(robots_data) > 0) {
+    final_df <- bind_rows(robots_data)
+    write.csv(final_df, output_file, row.names = FALSE)
+    message("Data saved to ", output_file)
+  } else {
+    message("No data scraped.")
+  }
+}
+
+
+```
+
