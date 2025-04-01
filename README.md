@@ -65,7 +65,7 @@ https://www.forbes.com/robots.txt
 Contains the visuals from `EDA.rmd`. Heatmaps and Frequency Plots
 
 ## Reference
-As a reference for this project, we utilized the open-source GitHub repository: \href{https://github.com/alexlitel/historical-robots-txt-parser/blob/master/historical_robots/scraper.py}{Historical Robots.txt Parser}. However, our final implementation deviates significantly from the original version. Using this base code, we optimized and extended the functionality with additional features, including:
+As a reference for this project, we utilized the open-source GitHub repository: https://github.com/alexlitel/historical-robots-txt-parser/blob/master/historical_robots/scraper.py. However, our final implementation deviates significantly from the original version. Using this base code, we optimized and extended the functionality with additional features, including:
 1. Custom timeframes for retrieval,
 2. Extraction of robots.txt file contents and associated domains,
 3. Concurrent request handling for efficiency.
